@@ -16,3 +16,9 @@ console.log("Base64:", testfile.content.toString("base64"))
 console.log(fops.rmfile(file))
 console.log(fops.rmfolder(folder))
 
+
+const mb = fops.unitsize()
+mb.megabyte = 1
+console.log(mb)
+console.log(mb.byte)
+
