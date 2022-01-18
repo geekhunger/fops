@@ -70,13 +70,13 @@ fn.rmfile = fn.rmfolder = path => { // remove file or folder recursevly
 }
 
 
-fn.catfile = fn.catfolder = (path, encoding = "base64") => { // read files recursevly (@path can be a single filename, an array of many filenames, a single folder name, an array of many folder names or even a mixed array of file and folder names)
+fn.catfile = fn.catfolder = (path, encoding) => { // read files recursevly (@path can be a single filename, an array of many filenames, a single folder name, an array of many folder names or even a mixed array of file and folder names)
     const files = []
     for(const file of !Array.isArray(path) ? [path] : path) {
         const asset = statSync(file)
         if(asset.isFile()) {
             files.push({
-                content: readFileSync(file, {encoding: encoding}),
+                content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
                 encoding: encoding,
                 mime: mimetype(file),
                 size: unit_lookup(asset.size),
