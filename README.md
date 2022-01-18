@@ -3,10 +3,14 @@
 Lightweight wrappers around synchchronous file operations in NodeJS. Currently, only these operations are available:
 
 
+<br>
+
 - **`mkfolder(path)`**
 
 Create a folder recursevly at given `path`.
 
+
+<br>
 
 - **`mkfile(path, content, action = "w", mode = 0o744)`**
 
@@ -17,10 +21,14 @@ The `action` argument sets the file interaction flag like `'a'` as in 'append'. 
 The `mode` argument sets the file permissions (`chmod`).
 
 
+<br>
+
 - **`rmfolder(path)` and `rmfile(path)`**
 
 Delete a folder or a file recursevly at given `path`.
 
+
+<br>
 
 - **`catfile(path, encoding)`**
 
@@ -48,3 +56,21 @@ The return value is an array of objects. Each object represents one file that ha
 Without an `encoding` argument the `content` property will be a `Buffer`! - With an `encoding` argument, the `content` will become a string (encoded by `encoding` format) and the `encoding` property will be present. You can then use the `content` string as you like, or use buffers yourself to convert it into a different format. [(See this documentation on encoding formats)](https://nodejs.org/docs/latest/api/buffer.html#buffers-and-character-encodings)
 
 The `size` propery is an object with getters and setters and helps converting the file size into different units, like byte into megabyte and vice versa.
+
+
+<br>
+
+- **`unitsize(byte)`**
+
+This is a helper... but it is available too!
+
+Calling it with an argument will set the default value in byte! For example: `unitsize(16)` - From there on, you can convert the value into `byte`, `kilobyte`, `megabyte` or `gigabyte`, for example: `console.log( unitsize(16).megabyte )`
+
+You can also directly set a value in `megabyte` if you want, and then convert it back into `byte`. For example:
+
+```js
+const mb = unitsize()
+console.log(mb)
+mb.megabyte = 3
+console.log(mb)
+```
