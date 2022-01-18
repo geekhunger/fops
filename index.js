@@ -21,7 +21,8 @@ const mimetype = path => {
     return require("mime").types[extname(path).substr(1)]
 }
 
-const unit_lookup = (value = 0) => {
+
+fn.unitsize = (value = 0) => {
     return {
         value: value,
         set byte(n)     {this.value = n},
@@ -79,7 +80,7 @@ fn.catfile = fn.catfolder = (path, encoding) => { // read files recursevly (@pat
                 content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
                 encoding: encoding,
                 mime: mimetype(file),
-                size: unit_lookup(asset.size),
+                size: fn.unitsize(asset.size),
                 name: basename(file),
             })
         } else if(asset.isDirectory()) {
