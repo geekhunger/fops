@@ -1,18 +1,18 @@
 {
     "private": false,
     "version": "0.0.1",
-    "name": "fops",
+    "name": "fopsy",
     "description": "synchronous file operations: mkfolder, rmfolder, mkfile, rmfile, catfile",
     "author": "geekhunger <hallo@geekhunger.de>",
     "license": "MIT",
     "main": "index.js",
-    "homepage": "https://github.com:geekhunger/fops#readme",
+    "homepage": "https://github.com/geekhunger/fopsy#readme",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com:geekhunger/fops.git"
+        "url": "git+https://github.com/geekhunger/fopsy.git"
     },
     "bugs": {
-        "url": "https://github.com:geekhunger/fops/issues"
+        "url": "https://github.com/geekhunger/fopsy/issues"
     },
     "keywords": [
         "fs",
@@ -20,7 +20,10 @@
         "write",
         "read",
         "nodejs",
-        "node"
+        "node",
+        "fops",
+        "fopsy",
+        "file ops"
     ],
     "dependencies": {
     }
