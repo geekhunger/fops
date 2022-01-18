@@ -1,4 +1,4 @@
-# fops
+# synchronous file operations
 
 Lightweight wrappers around synchchronous file operations in NodeJS. Currently, only these operations are available:
 
