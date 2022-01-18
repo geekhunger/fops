@@ -1,0 +1,27 @@
+{
+    "private": false,
+    "version": "0.0.1",
+    "name": "fops",
+    "description": "synchronous file operations: mkfolder, rmfolder, mkfile, rmfile, catfile",
+    "author": "geekhunger <hallo@geekhunger.de>",
+    "license": "MIT",
+    "main": "index.js",
+    "homepage": "https://github.com:geekhunger/fops#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com:geekhunger/fops.git"
+    },
+    "bugs": {
+        "url": "https://github.com:geekhunger/fops/issues"
+    },
+    "keywords": [
+        "fs",
+        "file",
+        "write",
+        "read",
+        "nodejs",
+        "node"
+    ],
+    "dependencies": {
+    }
+}
