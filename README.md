@@ -70,7 +70,8 @@ You can also directly set a value in `megabyte` if you want, and then convert it
 
 ```js
 const mb = unitsize()
-console.log(mb)
-mb.megabyte = 3
-console.log(mb)
+console.log(mb) // default byte value is 0
+mb.megabyte = 3 // setter will convert the value into byte internally
+console.log(mb.byte)
+console.log(mb.megabyte)
 ```
