@@ -1,8 +1,8 @@
 {
     "private": false,
-    "version": "0.2.1",
+    "version": "0.3.0",
     "name": "fopsy",
-    "description": "synchronous file operations: mkfolder, rmfolder, mkfile, rmfile, catfile",
+    "description": "synchronous file operations: cmd, mkfolder, rmfolder, mkfile, rmfile, catfile",
     "author": "geekhunger <hallo@geekhunger.de>",
     "license": "MIT",
     "main": "index.js",

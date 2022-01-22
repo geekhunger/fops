@@ -1,6 +1,6 @@
 # synchronous file operations
 
-Lightweight wrappers around synchchronous file operations in NodeJS. Currently, only these operations are available:
+Lightweight wrappers around **synchchronous** file operations in NodeJS. Currently, only these operations are available:
 
 
 <br>
@@ -74,4 +74,53 @@ console.log(mb) // default byte value is 0
 mb.megabyte = 3 // setter will convert the value into byte internally
 console.log(mb.byte)
 console.log(mb.megabyte)
+```
+
+
+<br>
+
+- **`exec(command [, options])`**
+
+This is a very light wrapper around the NodeJS [execSync](https://nodejs.org/api/child_process.html#child_processexecsynccommand-options) function and it lets you run shell commands. The function call accepts the exact same arguments as the original function, but it has a purpose and some additional value...
+
+`exec` is able catch all of the errors and outputs from STDOUT, that your `command` produces during execution! The return value is an object with a boolean `success` (true, false) and a string `stdout` (the response received from STDOUT).
+
+This way you can tell check if the command execution was sucessfully or not. And we can also parse the response of the command and react to any events accordingly.
+
+Here are some use-case examples:
+
+```js
+const {exec} = require("fopsy")
+
+const response = exec(`certbot certonly --webroot --non-interactive --agree-tos -m ${EMAIL} -w '${CHALLENGE_SAVEDIR}' -d ${DOMAIN} --work-dir '${ROOTPATH}' --deploy-hook '${RENEW_CALLBACK}'`)
+
+if(response.success) {
+    console.info(`Certbot requested a certificate renewal for '${DOMAIN}'. Server will be reloaded after the cert update.`)
+    console.log(response.stdout)
+} else {
+    console.error(response.stdout)
+    console.warn(`Certbot could not auto-renew the SSL certificate for '${DOMAIN}'! Please inspect the server logs and resolve this issues manually!`)
+}
+```
+
+As you've noticed, the `exec` will not throw any errors or break your application. But sometimes `throw new Error("command execution failed")` is exactly what you need:
+
+```js
+const response = exec(`certbot certonly...`)
+if(!response.success) throw new Error("command failed with: ${response.stdout}")
+```
+
+If you want a more elegant and flexible way of asserting, feel free to use the `assert` function from my other package on NPM, called [type-approve](https://www.npmjs.com/package/type-approve)!
+
+```js
+const {assert} = require("type-approve")
+const {exec} = require("fopsy")
+const run = cmd => assert(...Object.values(exec(cmd))) // just a custom shortcut to calling assert with condition and message arguments
+
+try {
+    const response = run(`certbot certonly...`)
+    console.log("Success: " + response.stdout)
+} catch(error) {
+    console.error(error)
+}
 ```
