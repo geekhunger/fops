@@ -17,9 +17,9 @@ const {
     rmSync
 } = require("fs")
 
-const mimetype = path => {
-    return require("mime").types[extname(path).substr(1)]
-}
+const {execSync} = require("child_process")
+
+const mimetype = path => require("mime").types[extname(path).substr(1)]
 
 
 fn.unitsize = (value = 0) => {
@@ -89,4 +89,21 @@ fn.catfile = fn.catfolder = (path, encoding) => { // read files recursevly (@pat
         }
     }
     return files
+}
+
+
+fn.exec = (command, options) => {
+    try {
+        return {
+            success: true,
+            stdout: execSync(command, options).toString().trim()
+        }
+    } catch(failure) {
+        // `failure.stderr.toString()` is a short-form error message
+        // `failure.trim()` contains the entire trace stack, including the short-form error message
+        return {
+            success: false,
+            stdout: failure.trim()
+        }
+    }
 }
