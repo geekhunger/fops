@@ -62,7 +62,7 @@ The `size` propery is an object with getters and setters and helps converting th
 
 - **`catfile(path, encoding)`**
 
-Read file(s) at given `path`. - This function is essentially just an alias to `catfolder()`, *but* instead of always returning an array of files, it returns it only when `path` was a folder containing multiple files. Otherwise, it just returns a single file object for convenience.
+Read file(s) at given `path`. - Technically, this function is just an alias to `catfolder()`, *but* instead of always returning an array of fetched files, this function returns an array only when `path` is passed as an array too! (If `path` is a string but it still points to a directory (potentially with many files in it), then the return value will also remain an array!) - Only when `path` is a string that points to a file, this function returns a single object. - So, this is basically a convenience function wrapper for `.catfile()`.
 
 
 <br>

@@ -92,37 +92,53 @@ fn.rmfile = fn.rmfolder = path => { // remove file or folder recursevly
     read files recursevly
     @path can be:
         a single filename,
-        an array of many filenames,
         a single folder name,
+        an array of many filenames,
         an array of many folder names
         or even a mixed array of file and folder names
 */
 fn.catfolder = (path, encoding) => {
     const files = []
     for(const file of !Array.isArray(path) ? [path] : path) {
-        const asset = statSync(file)
-        if(asset.isFile()) {
-            files.push({
-                content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
-                encoding: encoding,
-                mime: mimetype(file),
-                size: fn.sizeunit(asset.size),
+        try {
+            const asset = statSync(file)
+            if(asset.isFile()) {
+                files.push({
+                    content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
+                    encoding: encoding,
+                    mime: mimetype(file),
+                    size: fn.sizeunit(asset.size),
+                    name: basename(file),
+                    //time: fn.timeunit() // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
+                })
+            } else if(asset.isDirectory()) {
+                const paths = readdirSync(file).map(name => join(file, name))
+                files.push(fn.catfile(paths, encoding))
+            }
+        } catch(exception) {
+            files.push({ // content and size values indicate that file does not exist!
+                content: null,
+                encoding: undefined,
+                mime: undefined,
+                size: fn.sizeunit(0),
                 name: basename(file),
-                //time: fn.timeunit() // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
+                //time: undefined
             })
-        } else if(asset.isDirectory()) {
-            const paths = readdirSync(file).map(name => join(file, name))
-            files.push(fn.catfile(paths, encoding))
+            console.error(`Could not fetch file '${path}' because of error: ${exception.message}`)
         }
     }
     return files
 }
 
 
-// essentially the same as fn.catfolder but conveniently unpacks the return value of it, if it contains only one single file
-fn.catfile = (...args) => {
-    const files = fn.catfolder(...args)
-    return files.length <= 1 ? files[0] : files
+// theoretically just an alias to .catfolder(), but but this function
+// returns an array when @path is also an array (or when @path is a string but it leads to a directory)
+// returns a single object when @path is a string that points to a file
+fn.catfile = (path, encoding) => {
+    const files = fn.catfolder(path, encoding)
+    return Array.isArray(path) || (existsSync(path) && statSync(path).isDirectory())
+        ? files
+        : files[0]
 }
 
 
