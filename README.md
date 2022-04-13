@@ -30,9 +30,9 @@ Delete a folder or a file recursevly at given `path`.
 
 <br>
 
-- **`catfile(path, encoding)`**
+- **`catfolder(path, encoding)`**
 
-Read a file(s) at given `path` (`path` can be a string or an array of strings).
+Read file(s) at given `path` (`path` can be a string or an array of strings).
 
 The return value is an array of objects. Each object represents one file that has been read. For example:
 
@@ -56,6 +56,13 @@ The return value is an array of objects. Each object represents one file that ha
 Without an `encoding` argument the `content` property will be a `Buffer`! - With an `encoding` argument, the `content` will become a string (encoded by `encoding` format) and the `encoding` property will be present. You can then use the `content` string as you like, or use buffers yourself to convert it into a different format. [(See this documentation on encoding formats)](https://nodejs.org/docs/latest/api/buffer.html#buffers-and-character-encodings)
 
 The `size` propery is an object with getters and setters and helps converting the file size into different units, like byte into megabyte and vice versa.
+
+
+<br>
+
+- **`catfile(path, encoding)`**
+
+Read file(s) at given `path`. - This function is essentially just an alias to `catfolder()`, *but* instead of always returning an array of files, it returns it only when `path` was a folder containing multiple files. Otherwise, it just returns a single file object for convenience.
 
 
 <br>
