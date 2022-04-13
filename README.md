@@ -60,16 +60,16 @@ The `size` propery is an object with getters and setters and helps converting th
 
 <br>
 
-- **`unitsize(byte)`**
+- **`sizeunit(byte)`**
 
 This is a helper... but it is available too!
 
-Calling it with an argument will set the default value in byte! For example: `unitsize(16)` - From there on, you can convert the value into `byte`, `kilobyte`, `megabyte` or `gigabyte`, for example: `console.log( unitsize(16).megabyte )`
+Calling it with an argument will set the default value in byte! For example: `sizeunit(16)` - From there on, you can convert the value into `byte`, `kilobyte`, `megabyte` or `gigabyte`, for example: `console.log( sizeunit(16).megabyte )`
 
 You can also directly set a value in `megabyte` if you want, and then convert it back into `byte`. For example:
 
 ```js
-const mb = unitsize()
+const mb = sizeunit()
 console.log(mb) // default byte value is 0
 mb.megabyte = 3 // setter will convert the value into byte internally
 console.log(mb.byte)

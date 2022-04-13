@@ -22,7 +22,7 @@ const {execSync} = require("child_process")
 const mimetype = path => require("mime").types[extname(path).substr(1)]
 
 
-fn.unitsize = (value = 0) => {
+fn.sizeunit = (value = 0) => {
     return {
         value: value,
         set byte(n)     {this.value = n},
@@ -33,6 +33,23 @@ fn.unitsize = (value = 0) => {
         get kilobyte()  {return this.value / 1024},
         get megabyte()  {return this.value / 1024 / 1024},
         get gigabyte()  {return this.value / 1024 / 1024 / 1024}
+    }
+}
+
+
+fn.timeunit = (value = 0) => {
+    return {
+        value: value,
+        set milliseconds(n) {this.value = n},
+        set seconds(n)      {this.value = n * 1000},
+        set minutes(n)      {this.value = n * 1000 * 60},
+        set hours(n)        {this.value = n * 1000 * 60 * 60},
+        set days(n)         {this.value = n * 1000 * 60 * 60 * 24},
+        get milliseconds()  {return this.value},
+        get seconds()       {return this.value / 1000},
+        get minutes()       {return this.value / 1000 / 60},
+        get hours()         {return this.value / 1000 / 60 / 60},
+        get days()          {return this.value / 1000 / 60 / 60 / 24}
     }
 }
 
@@ -71,7 +88,16 @@ fn.rmfile = fn.rmfolder = path => { // remove file or folder recursevly
 }
 
 
-fn.catfile = fn.catfolder = (path, encoding) => { // read files recursevly (@path can be a single filename, an array of many filenames, a single folder name, an array of many folder names or even a mixed array of file and folder names)
+/*
+    read files recursevly
+    @path can be:
+        a single filename,
+        an array of many filenames,
+        a single folder name,
+        an array of many folder names
+        or even a mixed array of file and folder names
+*/
+fn.catfolder = (path, encoding) => {
     const files = []
     for(const file of !Array.isArray(path) ? [path] : path) {
         const asset = statSync(file)
@@ -80,8 +106,9 @@ fn.catfile = fn.catfolder = (path, encoding) => { // read files recursevly (@pat
                 content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
                 encoding: encoding,
                 mime: mimetype(file),
-                size: fn.unitsize(asset.size),
+                size: fn.sizeunit(asset.size),
                 name: basename(file),
+                //time: fn.timeunit() // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
             })
         } else if(asset.isDirectory()) {
             const paths = readdirSync(file).map(name => join(file, name))
@@ -92,6 +119,13 @@ fn.catfile = fn.catfolder = (path, encoding) => { // read files recursevly (@pat
 }
 
 
+// essentially the same as fn.catfolder but conveniently unpacks the return value of it, if it contains only one single file
+fn.catfile = (...args) => {
+    const files = fn.catfolder(...args)
+    return files.length <= 1 ? files[0] : files
+}
+
+
 fn.exec = (command, options) => {
     try {
         return {
@@ -99,11 +133,11 @@ fn.exec = (command, options) => {
             stdout: execSync(command, options).toString().trim()
         }
     } catch(failure) {
-        // `failure.stderr.toString()` is a short-form error message
-        // `failure.trim()` contains the entire trace stack, including the short-form error message
         return {
             success: false,
-            stdout: failure.trim()
+            stdout: failure.toString().trim()
+            // `failure.stderr` contains the a short-form error message
+            // `failure` contains the entire trace stack, including the short-form error message
         }
     }
 }
