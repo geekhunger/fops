@@ -1,6 +1,6 @@
 {
     "private": false,
-    "version": "0.5.0",
+    "version": "0.5.1",
     "name": "fopsy",
     "description": "synchronous file operations: cmd, mkfolder, rmfolder, mkfile, rmfile, catfile",
     "author": "geekhunger <hallo@geekhunger.de>",

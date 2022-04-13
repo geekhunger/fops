@@ -57,6 +57,8 @@ Without an `encoding` argument the `content` property will be a `Buffer`! - With
 
 The `size` propery is an object with getters and setters and helps converting the file size into different units, like byte into megabyte and vice versa.
 
+> NOTE: If a file is missing then its `content` will equal `null` and its `size` will equal `0`!
+
 
 <br>
 
