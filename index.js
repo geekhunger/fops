@@ -19,7 +19,7 @@ const {
 
 const {execSync} = require("child_process")
 
-const mimetype = path => require("mime").types[extname(path).substr(1)]
+const mimetype = path => require("mime").getType(path)
 
 
 fn.sizeunit = (value = 0) => {
