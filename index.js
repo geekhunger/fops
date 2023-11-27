@@ -15,9 +15,12 @@ import {
     rmSync
 } from "fs"
 
+import Mime from "mime"
+const getMimeType = Mime.getType
+
 import scope from "nodejs-scope"
 import {execSync} from "child_process"
-import {getType as getMimeType} from "mime"
+
 import {assert, type} from "type-approve"
 import strim from "./strim.js"
 

@@ -7,7 +7,22 @@
 
 # synchronous file operations
 
-Lightweight wrappers around **synchchronous** file operations in NodeJS. Currently, only these operations are available:
+Lightweight wrappers around **synchchronous** file operations in NodeJS.
+
+
+CommonJS (before version 1.0.0):
+
+```js
+const fopsy = require("fopsy") // all exports
+const {exec} = require("fopsy") // selected expors
+```
+
+ESM (since version 1.0.0):
+
+```js
+import fopsy from "fopsy" // all exports
+import {mkfile, rmfile} from "fopsy" // selected exports
+```
 
 
 <br>
@@ -132,7 +147,7 @@ This way you can tell check if the command execution was sucessfully or not. And
 Here are some use-case examples:
 
 ```js
-const {exec} = require("fopsy")
+import {exec} from "fopsy"
 
 const response = exec(`certbot certonly --webroot --non-interactive --agree-tos -m ${EMAIL} -w '${CHALLENGE_SAVEDIR}' -d ${DOMAIN} --work-dir '${ROOTPATH}' --deploy-hook '${RENEW_CALLBACK}'`)
 
@@ -155,8 +170,8 @@ if(!response.success) throw new Error("command failed with: ${response.stdout}")
 If you want a more elegant and flexible way of asserting, feel free to use the `assert` function from my other package on NPM, called [type-approve](https://www.npmjs.com/package/type-approve)!
 
 ```js
-const {assert} = require("type-approve")
-const {exec} = require("fopsy")
+import {assert} from "type-approve"
+import {exec} from "fopsy"
 const run = cmd => assert(...Object.values(exec(cmd))) // just a custom shortcut to calling assert with condition and message arguments
 
 try {
