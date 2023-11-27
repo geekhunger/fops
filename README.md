@@ -1,3 +1,10 @@
+# Readme
+
+> **IMPORTANT:** Changes since version 1.0.0
+>
+> - Fopsy now an ESM module! (Breaking change!)
+> - New methods: `mkgitignore`, `mkscript`, `runscript`
+
 # synchronous file operations
 
 Lightweight wrappers around **synchchronous** file operations in NodeJS. Currently, only these operations are available:
@@ -19,6 +26,32 @@ Create a file at given `path`. Any folders are created recursevly along the way.
 The `action` argument sets the file interaction flag like `'a'` as in 'append'. (Default is `'w'` as in 'write'.) [See this list](https://nodejs.org/api/fs.html#file-system-flags) for all supported flags.
 
 The `mode` argument sets the file permissions (`chmod`).
+
+
+<br>
+
+
+- **`mkscript(filepath, contents, environment)`**
+
+Create a shell script file at given `filepath` with given `contents`.
+
+The file gets only created if `environment` argument is either missing, or, if its value equals to `NODE_ENV`. Meaning, you can generate scripts based on the current Node environment.
+
+For example, if your environment is `NODE_ENV=production` and you create your script like this `mkscript("/folder/file.sh", "echo 'test'", "development")` then the script will not be created because the script is meant to be created only for "development" environments.
+
+This is useful if you have a preflight routine that generates scripts for your and you have multiple application running the same code. Based on the environment argument of the function, you could easily run the same code on "production" and "development" and only "production" would create the required file from the example above.
+
+
+<br>
+
+
+- **`mkgitignore(path, rules)`**
+
+Generates a `.gitignore` file with given `rules`.
+
+The neat thing about this function is that if there already IS a gitignore file, then it will extend it with given `rules`, without duplicated entries!
+
+Since the contents of the '.gitignore' file are auto-generated, the function call will also automatically untrack itself from Git, by adding a `.gitignore` rule to the generated file. - This does not apply if a gitignore file already existed and had a `*` (ignore all) rule, because in this case everything is untracked anyways.
 
 
 <br>
@@ -133,3 +166,13 @@ try {
     console.error(error)
 }
 ```
+
+
+<br>
+
+
+- **`runscript(cmd)`**
+
+Runs a command line call, for example: `runscript("echo 'hello world'")`. The great thing is that the call is running through an `assert` call, meaning it will throw an error if the script exists with an stderr.
+
+Basically the implimentation is as simple as `assert(...Object.values(exec(cmd)))`. Just a light wrapper around `exec()`.

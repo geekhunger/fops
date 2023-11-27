@@ -1,13 +1,11 @@
-const fn = module.exports = {}
-
-const {
+import {
     join,
     dirname,
     basename,
     extname
-} = require("path")
+} from "path"
 
-const {
+import {
     statSync,
     existsSync,
     readdirSync,
@@ -15,14 +13,16 @@ const {
     readFileSync,
     writeFileSync,
     rmSync
-} = require("fs")
+} from "fs"
 
-const {execSync} = require("child_process")
+import scope from "nodejs-scope"
+import {execSync} from "child_process"
+import {getType as getMimeType} from "mime"
+import {assert, type} from "type-approve"
+import strim from "./strim.js"
 
-const mimetype = path => require("mime").getType(path)
 
-
-fn.sizeunit = (value = 0) => {
+export const sizeunit = function(value = 0) {
     return {
         value: value,
         set byte(n)     {this.value = n},
@@ -37,7 +37,7 @@ fn.sizeunit = (value = 0) => {
 }
 
 
-fn.timeunit = (value = 0) => {
+export const timeunit = function(value = 0) {
     return {
         value: value,
         set milliseconds(n) {this.value = n},
@@ -54,19 +54,23 @@ fn.timeunit = (value = 0) => {
 }
 
 
-fn.mkfolder = path => { // create directory (recursevly)
-    /*fn.assert(
+export const mkfolder = function(path) { // create directory (recursevly)
+    /*assert(
         extname(path).length === 0,
         `Folder names are not allowed to have extensions of type file! In other words, '${basename(path, extname(path))}${extname(path)}' could not be created inside of '${dirname(path)}' because it's not allowed to have '${extname(path)}'.`
     )*/
-    if(/^\./i.test(path)) path += "/./" // convert dot-files into folders!
+    if(/^\./i.test(path)) {
+        path += "/./" // convert dot-files into folders!
+    }
     //path = resolve(ROOTPATH.toString(), path) // restrict folder creation to project directory!
-    if(!existsSync(path)) return mkdirSync(path, {recursive: true})
+    if(!existsSync(path)) {
+        return mkdirSync(path, {recursive: true})
+    }
 }
 
 
-fn.mkfile = (path, content, action = "w", mode = 0o744) => { // create file
-    fn.mkfolder(dirname(path))
+export const mkfile = function(path, content, action = "w", mode = 0o744) { // create file
+    mkfolder(dirname(path))
     try { // try-catch needed because writeFileSync does not have a return value, instead it throws an error on failure
         writeFileSync(path, content, {flag: action, mode: mode})
         return true
@@ -77,7 +81,68 @@ fn.mkfile = (path, content, action = "w", mode = 0o744) => { // create file
 }
 
 
-fn.rmfile = fn.rmfolder = path => { // remove file or folder recursevly
+export const mkscript = function(filepath, contents, environment) {
+    if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
+        const generator_filepath = new URL("", import.meta.url).pathname
+        return mkfile(
+            filepath,
+            (
+                `#!/bin/bash\n\n`
+                + `# This script has been auto-generated\n`
+                + `# Generator source can be found at '${generator_filepath}'\n\n`
+                + contents
+                + "\n"
+            ),
+            "w", // override existing file
+            0o750
+        )
+    }
+}
+
+
+export const mkgitignore = function(path, rules) {
+    path = path
+        .replace(/\/*$/, "/") // normalize trailing slashes
+        .replace(/(\.gitignore)?$/, ".gitignore") // define filename
+
+    const read = () => catfile(path, "utf8").content
+    const write = contents => mkfile(path, contents)
+
+    const diff = (contents, requirements) => {
+        const ruleset = strim(contents).split("\n")
+        return strim(
+            requirements
+            .split("\n")
+            .filter(rule => rule.length < 1 || !ruleset.some(line => strim(line).includes(strim(rule))))
+            .join("\n")
+        )
+    }
+
+    if(!hasfile(path)) {
+        const generator_filepath = new URL("", import.meta.url).pathname
+        write(
+            strim([
+                `# This file has been auto-generated\n# Generator source can be found at '${generator_filepath}'`,
+                strim(rules),
+                ".gitignore" // untrack self
+            ], "\n\n")
+        )
+    } else {
+        const contents = read()
+        const content_length = strim(contents).length
+        let requirements = diff(contents, rules)
+        if(content_length === 0) {
+            requirements = requirements + "\n.gitignore" // untrack self
+        }
+        if(requirements.length > 0) {
+            const paragraph_separator = content_length > 0 ? (contents.match(/\n+$/) ? "\n" : "\n\n") : ""
+            write(contents + paragraph_separator + requirements)
+        }
+    }
+}
+
+
+export const rmfolder = function(path) { // remove file or folder recursevly
     try {
         rmSync(path, {recursive: true, force: true})
         return true
@@ -86,6 +151,9 @@ fn.rmfile = fn.rmfolder = path => { // remove file or folder recursevly
         return false
     }
 }
+
+
+export const rmfile = rmfolder // alias
 
 
 /*
@@ -97,7 +165,7 @@ fn.rmfile = fn.rmfolder = path => { // remove file or folder recursevly
         an array of many folder names
         or even a mixed array of file and folder names
 */
-fn.catfolder = (path, encoding) => {
+export const catfolder = function(path, encoding) {
     const files = []
     for(const file of !Array.isArray(path) ? [path] : path) {
         try {
@@ -106,21 +174,21 @@ fn.catfolder = (path, encoding) => {
                 files.push({
                     content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
                     encoding: encoding,
-                    mime: mimetype(file),
-                    size: fn.sizeunit(asset.size),
+                    mime: getMimeType(file),
+                    size: sizeunit(asset.size),
                     name: basename(file),
-                    //time: fn.timeunit() // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
+                    //time: timeunit() // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
                 })
             } else if(asset.isDirectory()) {
                 const paths = readdirSync(file).map(name => join(file, name))
-                files.push(fn.catfile(paths, encoding))
+                files.push(catfile(paths, encoding))
             }
         } catch(exception) {
             files.push({ // content and size values indicate that file does not exist!
                 content: null,
                 encoding: undefined,
                 mime: undefined,
-                size: fn.sizeunit(0),
+                size: sizeunit(0),
                 name: basename(file),
                 //time: undefined
             })
@@ -134,15 +202,15 @@ fn.catfolder = (path, encoding) => {
 // theoretically just an alias to .catfolder(), but but this function
 // returns an array when @path is also an array (or when @path is a string but it leads to a directory)
 // returns a single object when @path is a string that points to a file
-fn.catfile = (path, encoding) => {
-    const files = fn.catfolder(path, encoding)
+export const catfile = function(path, encoding) {
+    const files = catfolder(path, encoding)
     return Array.isArray(path) || (existsSync(path) && statSync(path).isDirectory())
         ? files
         : files[0]
 }
 
 
-fn.exec = (command, options) => {
+export const exec = function(command, options) {
     try {
         return {
             success: true,
@@ -156,4 +224,25 @@ fn.exec = (command, options) => {
             // `failure` contains the entire trace stack, including the short-form error message
         }
     }
+}
+
+
+export const runscript = function(cmd) { // run shell command and throw on errors with message from stdout
+    return assert(...Object.values(exec(cmd)))
+}
+
+
+export default {
+    sizeunit,
+    timeunit,
+    mkfolder,
+    mkfile,
+    mkscript,
+    mkgitignore,
+    rmfolder,
+    rmfile,
+    catfolder,
+    catfile,
+    exec,
+    runscript
 }
