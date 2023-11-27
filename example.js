@@ -1,3 +1,8 @@
-import {mkfile} from "./index.js"
+import {mkfile, mkscript, runscript, exec} from "./index.js"
 
-console.log(mkfile)
+mkfile("./foobar/test.txt", "hello world!")
+
+const cmd = "echo 'hello world'"
+mkscript("./foobar/echo.sh", cmd)
+console.log(runscript(cmd))
+console.log(exec(cmd))
