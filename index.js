@@ -15,6 +15,9 @@ import {
     rmSync
 } from "fs"
 
+import callsites from "callsites"
+const getCallerFilepath = () => callsites()[2].getFileName()
+
 import Mime from "mime"
 const getMimeType = Mime.getType
 
@@ -86,13 +89,12 @@ export const mkfile = function(path, content, action = "w", mode = 0o744) { // c
 
 export const mkscript = function(filepath, contents, environment) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
-        const generator_filepath = new URL("", import.meta.url).pathname
         return mkfile(
             filepath,
             (
                 `#!/bin/bash\n\n`
                 + `# This script has been auto-generated\n`
-                + `# Generator source can be found at '${generator_filepath}'\n\n`
+                + `# Generator source can be found at '${getCallerFilepath()}'\n\n`
                 + contents
                 + "\n"
             ),
@@ -122,10 +124,9 @@ export const mkgitignore = function(path, rules) {
     }
 
     if(!hasfile(path)) {
-        const generator_filepath = new URL("", import.meta.url).pathname
         write(
             strim([
-                `# This file has been auto-generated\n# Generator source can be found at '${generator_filepath}'`,
+                `# This file has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'`,
                 strim(rules),
                 ".gitignore" // untrack self
             ], "\n\n")
