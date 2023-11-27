@@ -25,7 +25,7 @@ import scope from "nodejs-scope"
 import {execSync} from "child_process"
 
 import {assert, type} from "type-approve"
-import strim from "./strim.js"
+import strim from "string-slurp"
 
 
 export const sizeunit = function(value = 0) {
