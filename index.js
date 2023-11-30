@@ -131,9 +131,15 @@ export const mkgitignore = function(path, rules) {
             .split("\n")
             .some(line => rule.test(line))
     }
-
-    const content_curr = read(`# This file has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n${strim(rules)}`)
-    let content_new = merge(content_curr, rules)
+    
+    let content_new = merge( // merge existing and new git-ignore rules without diplicates
+        read(strim([ // read contents of existing .gitignore or fall-back to fallowing content
+            "# This file has been auto-generated",
+            `# Generator source can be found at '${getCallerFilepath()}'`,
+            strim(rules)
+        ])),
+        rules // add rules specified by the generator function call
+    )
 
     if(!contains(content_new, /.gitignore$/i) && !contains(content_new, /^\*$/)) {
         content_new += "\n.gitignore" // git untrack self
