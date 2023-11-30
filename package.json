@@ -1,7 +1,7 @@
 {
     "private": false,
     "type": "module",
-    "version": "1.3.2",
+    "version": "1.4.1",
     "name": "fopsy",
     "description": "synchronous file operations: cmd, mkfolder, rmfolder, mkfile, rmfile, catfile",
     "author": "geekhunger <hello@geekhunger.com>",

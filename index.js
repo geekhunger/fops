@@ -81,7 +81,7 @@ export const mkfile = function(path, content, action = "w", mode = 0o744) { // c
         writeFileSync(path, content, {flag: action, mode: mode})
         return true
     } catch(failure) {
-        console.error(`Could not create file '${path}' because of error: ${failure.message}`)
+        console.warn(`Could not create file '${path}' because of error: ${failure.message}`)
         return false
     }
 }
@@ -107,42 +107,39 @@ export const mkscript = function(filepath, contents, environment) {
 
 export const mkgitignore = function(path, rules) {
     path = path
-        .replace(/\/*$/, "/") // normalize trailing slashes
-        .replace(/(\.gitignore)?$/, ".gitignore") // define filename
+        .replace(/\/*$/, "/") // flatten trailing slashes
+        .replace(/(\.gitignore)?$/, ".gitignore") // mandatory filename
 
-    const read = () => catfile(path, "utf8").content
+    const read = fallback => catfile(path, "utf8").content || fallback
     const write = contents => mkfile(path, contents)
 
-    const diff = (contents, requirements) => {
+    const merge = (contents, requirements) => {
+        assert(type({strings: [contents, requirements]}), "Arguments must be strings!")
         const ruleset = strim(contents).split("\n")
-        return strim(
+        return strim([
+            contents,
             requirements
-            .split("\n")
-            .filter(rule => rule.length < 1 || !ruleset.some(line => strim(line).includes(strim(rule))))
-            .join("\n")
-        )
+                .split("\n")
+                .filter(rule => rule.length < 1 || !ruleset.some(line => strim(line).includes(strim(rule))))
+                .join("\n")
+        ])
     }
 
-    if(!hasfile(path)) {
-        write(
-            strim([
-                `# This file has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'`,
-                strim(rules),
-                ".gitignore" // untrack self
-            ], "\n\n")
-        )
-    } else {
-        const contents = read()
-        const content_length = strim(contents).length
-        let requirements = diff(contents, rules)
-        if(content_length === 0) {
-            requirements = requirements + "\n.gitignore" // untrack self
-        }
-        if(requirements.length > 0) {
-            const paragraph_separator = content_length > 0 ? (contents.match(/\n+$/) ? "\n" : "\n\n") : ""
-            write(contents + paragraph_separator + requirements)
-        }
+    const contains = (contents, rule) => {
+        assert(type({string: contents}) && type({expression: rule}), "Arguments must be string and regexp!")
+        return contents
+            .split("\n")
+            .some(line => rule.test(line))
     }
+
+    const content_curr = read(`# This file has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n${strim(rules)}`)
+    let content_new = merge(content_curr, rules)
+
+    if(!contains(content_new, /.gitignore$/i) && !contains(content_new, /^\*$/)) {
+        content_new += "\n.gitignore" // git untrack self
+    }
+
+    write(content_new)
 }
 
 
@@ -151,7 +148,7 @@ export const rmfolder = function(path) { // remove file or folder recursevly
         rmSync(path, {recursive: true, force: true})
         return true
     } catch(failure) {
-        console.error(`Could not remove file '${path}' because of error: ${failure.message}`)
+        console.warn(`Could not remove file '${path}' because of error: ${failure.message}`)
         return false
     }
 }
@@ -173,7 +170,7 @@ export const catfolder = function(path, encoding) {
     const files = []
     for(const file of !Array.isArray(path) ? [path] : path) {
         try {
-            const asset = statSync(file)
+            const asset = statSync(file) // will throw error if not file or directory
             if(asset.isFile()) {
                 files.push({
                     content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
@@ -196,7 +193,7 @@ export const catfolder = function(path, encoding) {
                 name: basename(file),
                 //time: undefined
             })
-            console.error(`Could not fetch file '${path}' because of error: ${exception.message}`)
+            console.warn(`Could not fetch file '${path}' because of error: ${exception.message}`)
         }
     }
     return files

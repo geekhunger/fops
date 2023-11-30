@@ -1,4 +1,11 @@
-import {mkfile, mkscript, runscript, exec} from "./index.js"
+import {catfile, mkfile, mkscript, mkgitignore, runscript, exec} from "./index.js"
+
+mkgitignore("./foobar", `
+    #test
+    /whatever/**
+`)
+
+catfile("./lol")
 
 mkfile("./foobar/test.txt", "hello world!")
 
