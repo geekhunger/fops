@@ -91,13 +91,7 @@ export const mkscript = function(filepath, contents, environment) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
         return mkfile(
             filepath,
-            (
-                `#!/bin/bash\n\n`
-                + `# This script has been auto-generated\n`
-                + `# Generator source can be found at '${getCallerFilepath()}'\n\n`
-                + contents
-                + "\n"
-            ),
+            `#!/bin/bash\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${contents}`,
             "w", // override existing file
             0o750
         )
@@ -106,39 +100,27 @@ export const mkscript = function(filepath, contents, environment) {
 
 
 export const mkgitignore = function(path, rules) {
+    assert(type({strings: [path, rules]}) && path.length > 0 && rules.length > 0, "Gitignore file requires a filepath and contents!")
+
     path = path
         .replace(/\/*$/, "/") // flatten trailing slashes
-        .replace(/(\.gitignore)?$/, ".gitignore") // mandatory filename
+        .replace(/(\.gitignore)?$/, ".gitignore") // cast filename
 
     const read = fallback => catfile(path, "utf8").content || fallback
     const write = contents => mkfile(path, contents)
+    const contains = (contents, rule) => contents.split("\n").some(line => rule.test(line))
 
     const merge = (contents, requirements) => {
-        assert(type({strings: [contents, requirements]}), "Arguments must be strings!")
-        const ruleset = strim(contents).split("\n")
-        return strim([
-            contents,
-            requirements
-                .split("\n")
-                .filter(rule => rule.length < 1 || !ruleset.some(line => strim(line).includes(strim(rule))))
-                .join("\n")
-        ])
-    }
-
-    const contains = (contents, rule) => {
-        assert(type({string: contents}) && type({expression: rule}), "Arguments must be string and regexp!")
-        return contents
-            .split("\n")
-            .some(line => rule.test(line))
+        const rules = [
+            strim(contents).split("\n"),
+            strim(requirements).split("\n")
+        ]
+        return [...new Set(rules.flat())].join("\n") // keep only unique line entries
     }
     
-    let content_new = merge( // merge existing and new git-ignore rules without diplicates
-        read(strim([ // read contents of existing .gitignore or fall-back to fallowing content
-            "# This file has been auto-generated",
-            `# Generator source can be found at '${getCallerFilepath()}'`,
-            strim(rules)
-        ])),
-        rules // add rules specified by the generator function call
+    let content_new = merge(
+        read(`# This file has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n${strim(rules)}`), // read contents of existing .gitignore file or fallback to given content
+        rules // merge new gitignore rules with existing content (without duplicate entries)
     )
 
     if(!contains(content_new, /.gitignore$/i) && !contains(content_new, /^\*$/)) {
@@ -234,8 +216,11 @@ export const exec = function(command, options) {
 }
 
 
-export const runscript = function(cmd) { // run shell command and throw on errors with message from stdout
-    return assert(...Object.values(exec(cmd)))
+export const runscript = function(value) { // run shell command and throw on errors with message from stdout
+    if(type({filepath: value}) && !/^sh\s/i.test(value)) {
+        value = catfile(value, "utf8").content
+    }
+    return assert(...Object.values(exec(value)))
 }
 
 
