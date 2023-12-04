@@ -19,7 +19,6 @@ import callsites from "callsites"
 const getCallerFilepath = () => callsites()[2].getFileName()
 
 import Mime from "mime"
-const getMimeType = Mime.getType
 
 import scope from "nodejs-scope"
 import {execSync} from "child_process"
@@ -91,7 +90,7 @@ export const mkscript = function(filepath, contents, environment) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
         return mkfile(
             filepath,
-            `#!/bin/bash\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${contents}`,
+            `#!/bin/bash\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
             "w", // override existing file
             0o750
         )
@@ -163,10 +162,11 @@ export const catfolder = function(path, encoding) {
                 files.push({
                     content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
                     encoding: encoding,
-                    mime: getMimeType(file),
+                    mime: Mime.getType(file),
                     size: sizeunit(asset.size),
                     name: basename(file),
-                    //time: timeunit() // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
+                    created: asset.birthtime, //timeunit(asset.birthtimeMs) // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
+                    modified: asset.mtime //timeunit(asset.mtimeMs)
                 })
             } else if(asset.isDirectory()) {
                 const paths = readdirSync(file).map(name => join(file, name))
@@ -179,7 +179,8 @@ export const catfolder = function(path, encoding) {
                 mime: undefined,
                 size: sizeunit(0),
                 name: basename(file),
-                //time: undefined
+                created: undefined,
+                modified: undefined
             })
             console.warn(`Could not fetch file '${path}' because of error: ${exception.message}`)
         }
@@ -193,7 +194,7 @@ export const catfolder = function(path, encoding) {
 // returns a single object when @path is a string that points to a file
 export const catfile = function(path, encoding) {
     const files = catfolder(path, encoding)
-    return Array.isArray(path) || (existsSync(path) && statSync(path).isDirectory())
+    return Array.isArray(files) && files.length > 1
         ? files
         : files[0]
 }
