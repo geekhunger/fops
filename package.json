@@ -1,7 +1,7 @@
 {
     "private": false,
     "type": "module",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "name": "fopsy",
     "description": "synchronous file operations: cmd, mkfolder, rmfolder, mkfile, rmfile, catfile",
     "author": "geekhunger <hello@geekhunger.com>",
@@ -31,6 +31,6 @@
         "mime": "^4.0.0",
         "nodejs-scope": "^2.1.2",
         "string-slurp": "^2.1.0",
-        "type-approve": "^3.1.1"
+        "type-approve": "^4.0.0"
     }
 }
