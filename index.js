@@ -165,7 +165,7 @@ export const catfolder = function(path, encoding) {
                     mime: Mime.getType(file),
                     size: sizeunit(asset.size),
                     name: basename(file),
-                    created: asset.birthtime, //timeunit(asset.birthtimeMs) // TODO https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems/
+                    created: asset.birthtime, //timeunit(asset.birthtimeMs) // https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems
                     modified: asset.mtime //timeunit(asset.mtimeMs)
                 })
             } else if(asset.isDirectory()) {
