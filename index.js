@@ -86,19 +86,23 @@ export const mkfile = function(path, content, action = "w", mode = 0o744) { // c
 }
 
 
-export const mkscript = function(filepath, contents, environment) {
+export const mkscript = function(filepath, contents, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
-        return mkfile(
+        const status = mkfile(
             filepath,
             `#!/bin/bash\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
             "w", // override existing file
             0o750
         )
+        if(gitignore === true) {
+            return mkgitignore(dirname(filepath), basename(filepath)) && status
+        }
+        return status
     }
 }
 
 
-export const mkgitignore = function(path, rules) {
+export const mkgitignore = function(path, rules, selfignore = false) {
     assert(type({strings: [path, rules]}) && path.length > 0 && rules.length > 0, "Gitignore file requires a filepath and contents!")
 
     path = path
@@ -122,11 +126,11 @@ export const mkgitignore = function(path, rules) {
         rules // merge new gitignore rules with existing content (without duplicate entries)
     )
 
-    if(!contains(content_new, /.gitignore$/i) && !contains(content_new, /^\*$/)) {
+    if(!contains(content_new, /.gitignore$/i) && !contains(content_new, /^\*$/) && selfignore === true) {
         content_new += "\n.gitignore" // git untrack self
     }
 
-    write(content_new)
+    return write(content_new)
 }
 
 
