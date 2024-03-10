@@ -1,8 +1,10 @@
 import {
-    join,
     dirname,
     basename,
-    extname
+    extname,
+    join,
+    resolve,
+    sep as PATH_SEPARATOR
 } from "path"
 
 import {
@@ -20,6 +22,7 @@ const getCallerFilepath = () => callsites()[2].getFileName()
 
 import Mime from "mime"
 
+import rootpath from "app-root-path"
 import scope from "nodejs-scope"
 import {execSync} from "child_process"
 
@@ -59,28 +62,32 @@ export const timeunit = function(value = 0) {
 }
 
 
-export const mkfolder = function(path) { // create directory (recursevly)
-    /*assert(
-        extname(path).length === 0,
-        `Folder names are not allowed to have extensions of type file! In other words, '${basename(path, extname(path))}${extname(path)}' could not be created inside of '${dirname(path)}' because it's not allowed to have '${extname(path)}'.`
-    )*/
+export const createFolder = function(path, dotnames = true, sandbox = false) { // recursive creation of directory
+    if(sandbox === true) {
+        assert(path === resolve(rootpath.toString(), path), `Directory '${path}' is outside of the sandboxed project folder '${rootpath.toString()}'!`)
+    }
+    if(dotnames !== true) {
+        const malformed_subfolders = path?.split(PATH_SEPARATOR)?.filter(Boolean)?.every(part => extname(part).length === 0) || []
+        const error_messages = malformed_subfolders.map(folder => `Folder '${basename(folder)}' must not contain a file type extension '${extname(folder)}'!`)
+        assert(type({folderpath: path}) && malformed_subfolders.length === 0, `Directory '${path}' contains malformed sub-folder names!\n${error_messages.join("\n\t")}`)
+    }
     if(/^\./i.test(path)) {
         path += "/./" // convert dot-files into folders!
     }
-    //path = resolve(ROOTPATH.toString(), path) // restrict folder creation to project directory!
     if(!existsSync(path)) {
-        return mkdirSync(path, {recursive: true})
+        mkdirSync(path, {recursive: true})
     }
+    return true
 }
 
 
-export const mkfile = function(path, content, action = "w", mode = 0o744) { // create file
-    mkfolder(dirname(path))
+export const createFile = function(path, content, action = "w", mode = 0o744, dir_dotnames = true, sandbox = false) { // recursive creation of file
+    createFolder(dirname(path), dir_dotnames, sandbox)
     try { // try-catch needed because writeFileSync does not have a return value, instead it throws an error on failure
         writeFileSync(path, content, {flag: action, mode: mode})
         return true
-    } catch(failure) {
-        console.warn(`Could not create file '${path}' because of error: ${failure.message}`)
+    } catch(exception) {
+        console.warn(`Could not create file '${path}' because of error: ${exception.message}`)
         return false
     }
 }
@@ -88,7 +95,7 @@ export const mkfile = function(path, content, action = "w", mode = 0o744) { // c
 
 export const mkscript = function(filepath, contents, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
-        const status = mkfile(
+        const status = createFile(
             filepath,
             `#!/bin/bash\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
             "w", // override existing file
@@ -109,8 +116,8 @@ export const mkgitignore = function(path, rules, selfignore = false) {
         .replace(/\/*$/, "/") // flatten trailing slashes
         .replace(/(\.gitignore)?$/, ".gitignore") // cast filename
 
-    const read = fallback => catfile(path, "utf8").content || fallback
-    const write = contents => mkfile(path, contents)
+    const read = fallback => openFile(path, "utf8").content || fallback
+    const write = contents => createFile(path, contents)
     const contains = (contents, rule) => contents.split("\n").some(line => rule.test(line))
 
     const merge = (contents, requirements) => {
@@ -134,47 +141,53 @@ export const mkgitignore = function(path, rules, selfignore = false) {
 }
 
 
-export const rmfolder = function(path) { // remove file or folder recursevly
+export const deleteFile = function(path) { // recursive removal of file or folder
     try {
         rmSync(path, {recursive: true, force: true})
         return true
     } catch(failure) {
-        console.warn(`Could not remove file '${path}' because of error: ${failure.message}`)
+        console.warn(`Could not delete file '${path}'! ${failure.message}`)
         return false
     }
 }
 
 
-export const rmfile = rmfolder // alias
+export const deleteFolder = deleteFile // convenience alias
 
 
 /*
-    read files recursevly
-    @path can be:
-        a single filename,
+    synchronious (and recursive) read of files
+    @sources can be:
+        a single file name,
         a single folder name,
-        an array of many filenames,
+        an array of many file names,
         an array of many folder names
         or even a mixed array of file and folder names
 */
-export const catfolder = function(path, encoding) {
-    const files = []
-    for(const file of !Array.isArray(path) ? [path] : path) {
+export const openFiles = function(sources, encoding) {
+    if(!type({array: sources})) {
+        sources = [sources]
+    }
+    const malformed_paths = sources.filter(path => !type({filepath: path}) && !type({folderpath: path}))
+    assert(malformed_paths.length === 0, `Found malformed paths ${JSON.stringify(malformed_paths)}!`)
+    let files = []
+    for(let path of sources) {
         try {
-            const asset = statSync(file) // will throw error if not file or directory
+            const asset = statSync(path) // will throw error if not file or directory
             if(asset.isFile()) {
                 files.push({
-                    content: readFileSync(file, {encoding: encoding}), // encoding can be "base64" or "ascii" or "binary"
-                    encoding: encoding,
-                    mime: Mime.getType(file),
+                    content: readFileSync(path, {encoding}), // encoding can for example be one of ["utf8", "base64", "ascii", "binary"]
+                    encoding,
+                    mime: Mime.getType(path),
                     size: sizeunit(asset.size),
-                    name: basename(file),
+                    directory: dirname(path),
+                    name: basename(path),
                     created: asset.birthtime, //timeunit(asset.birthtimeMs) // https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems
                     modified: asset.mtime //timeunit(asset.mtimeMs)
                 })
             } else if(asset.isDirectory()) {
-                const paths = readdirSync(file).map(name => join(file, name))
-                files.push(catfile(paths, encoding))
+                const paths = readdirSync(path).map(name => join(path, name))
+                files.push(openFiles(paths, encoding))
             }
         } catch(exception) {
             files.push({ // content and size values indicate that file does not exist!
@@ -182,29 +195,73 @@ export const catfolder = function(path, encoding) {
                 encoding: undefined,
                 mime: undefined,
                 size: sizeunit(0),
-                name: basename(file),
+                directory: dirname(path),
                 created: undefined,
-                modified: undefined
+                modified: undefined,
+                name: basename(path),
             })
-            console.warn(`Could not fetch file '${path}' because of error: ${exception.message}`)
+            console.warn(`Could not read file '${path}'! ${exception.message}`)
         }
     }
+    // if(files.length > 1 && (sources.length > 1 || (sources.length === 1 && type({folderpath: sources[0]})))) {
+    //     return files // return an array of files when @sources contained more than one path, or when @sources had only one path but it was a directory
+    // }
+    // return files[0]
     return files
 }
 
 
-// theoretically just an alias to .catfolder(), but but this function
-// returns an array when @path is also an array (or when @path is a string but it leads to a directory)
-// returns a single object when @path is a string that points to a file
-export const catfile = function(path, encoding) {
-    const files = catfolder(path, encoding)
-    return Array.isArray(files) && files.length > 1
-        ? files
-        : files[0]
+export const openFile = function(path, encoding) { // a convenience alias to `openFiles(path, encoding)[0]`
+    assert(type({filepath: path}), `Malformed path '${path}'!`)
+    return openFiles(path, encoding)?.[0] || null
 }
 
 
-export const exec = function(command, options) {
+export const openJsonFile = function(path) {
+    const file = openFile(path, "utf8")
+    assert(type({object: file}) && file.content !== null && file.size?.value > 0, `Invalid JSON file '${path}'!`)
+    const content = JSON.parse(file.content)
+    assert(type({object: content}, {array: content}, {string: content}, {number: content}, {boolean: content}) || content === null, `Malformed content in file '${path}'!`)
+    if(type({object: content})) {
+        return {...content}
+    } else if(type({array: content})) {
+        return [...content]
+    }
+    return content // string, number, boolean or null
+}
+
+
+export const readPlist = function(src, env = scope.env) {
+    let path = null
+    if(type({filepath: src})) {
+        path = src
+        src = openJsonFile(path)
+    }
+    assert(
+        type({object: src}), // a property lists are always pairs of {"key": "value"}
+        "Malformed PLIST" + !path
+            ? `:\n${JSON.stringify(content, null, "\t")}`
+            : ` file '${path}'!`
+    )
+    if(!type({nil: env})) { // if @env is null or undefined
+        assert(
+            Object.keys(src).some(prop => prop.startsWith(env)),
+            `Missing environment '${env}' in PLIST` + !path
+                ? `:\n${JSON.stringify(content, null, "\t")}`
+                : ` file '${path}'!`
+        )
+        assert(
+            type({object: src[env]}, {array: src[env]}),
+            `Malformed PLIST for environment '${env}'` + !path
+                ? `:\n${JSON.stringify(src[env], null, "\t")}`
+                : ` file '${path}'!`
+        )
+    }
+    return src[env]
+}
+
+
+export const executeCommand = function(command, options) {
     try {
         return {
             success: true,
@@ -221,25 +278,25 @@ export const exec = function(command, options) {
 }
 
 
-export const runscript = function(value) { // run shell command and throw on errors with message from stdout
-    if(type({filepath: value}) && !/^sh\s/i.test(value)) {
-        value = catfile(value, "utf8").content
+export const executeScript = function(src) { // run shell command and throw on errors with message from stdout
+    if(type({filepath: src}) && !/^sh\s/i.test(src)) {
+        src = openFile(src, "utf8").content
     }
-    return assert(...Object.values(exec(value)))
+    return assert(...Object.values(executeCommand(src)))
 }
 
 
 export default {
     sizeunit,
     timeunit,
-    mkfolder,
-    mkfile,
-    mkscript,
-    mkgitignore,
-    rmfolder,
-    rmfile,
-    catfolder,
-    catfile,
-    exec,
-    runscript
+    createDirectory,
+    createFile,
+    createScriptFile,
+    createGitignoreFile,
+    deleteFolder,
+    deleteFile,
+    openFile,
+    openFolder,
+    executeCommand,
+    executeScript
 }
