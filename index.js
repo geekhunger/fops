@@ -123,14 +123,14 @@ export const createScript = function(filepath, contents, environment, gitignore 
             0o750
         )
         if(gitignore === true) {
-            return mkgitignore(dirname(filepath), basename(filepath)) && status
+            return createGitignore(dirname(filepath), basename(filepath)) && status
         }
         return status
     }
 }
 
 
-export const mkgitignore = function(path, rules, selfignore = false) {
+export const createGitignore = function(path, rules, selfignore = false) {
     assert(type({strings: [path, rules]}) && path.length > 0 && rules.length > 0, "Gitignore file requires a filepath and contents!")
 
     path = path
@@ -238,17 +238,26 @@ export const openFile = function(path, encoding) { // a convenience alias to `op
 }
 
 
-export const openJsonFile = function(path) {
-    const file = openFile(path, "utf8")
-    assert(type({object: file}) && file.content !== null && file.size?.value > 0, `Invalid JSON file '${path}'!`)
-    const content = JSON.parse(file.content)
-    assert(type({object: content}, {array: content}, {string: content}, {number: content}, {boolean: content}) || content === null, `Malformed content in file '${path}'!`)
-    if(type({object: content})) {
-        return {...content}
-    } else if(type({array: content})) {
-        return [...content]
+export const readJson = function(src) {
+    let path = null
+    if(isFilepath(src)) {
+        path = src
+        const file = openFile(path, "utf8")
+        assert(type({object: file}) && file.content !== null && file.size?.value > 0, `Invalid JSON file '${path}'!`)
+        src = JSON.parse(file.content)
     }
-    return content // string, number, boolean or null
+    assert(
+        type({object: src}, {array: src}, {string: src}, {number: src}, {boolean: src}) || src === null,
+        "Malformed JSON" + !path
+            ? `:\n${JSON.stringify(src, null, "\t")}`
+            : ` file '${path}'!`
+    )
+    if(type({object: src})) {
+        return {...src}
+    } else if(type({array: src})) {
+        return [...src]
+    }
+    return src // string, number, boolean or null
 }
 
 
@@ -256,19 +265,19 @@ export const readPlist = function(src, env = scope.env) {
     let path = null
     if(isFilepath(src)) {
         path = src
-        src = openJsonFile(path)
+        src = readJson(path)
     }
     assert(
         type({object: src}), // a property lists are always pairs of {"key": "value"}
         "Malformed PLIST" + !path
-            ? `:\n${JSON.stringify(content, null, "\t")}`
+            ? `:\n${JSON.stringify(src, null, "\t")}`
             : ` file '${path}'!`
     )
     if(!type({nil: env})) { // if @env is null or undefined
         assert(
             Object.keys(src).some(prop => prop.startsWith(env)),
             `Missing environment '${env}' in PLIST` + !path
-                ? `:\n${JSON.stringify(content, null, "\t")}`
+                ? `:\n${JSON.stringify(src, null, "\t")}`
                 : ` file '${path}'!`
         )
         assert(
