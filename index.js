@@ -42,7 +42,7 @@ const isFolderpath = function(value) {
 }
 
 
-export const sizeunit = function(value = 0) {
+export const sizeUnit = function(value = 0) {
     return {
         value: value,
         set byte(n)     {this.value = n},
@@ -57,7 +57,7 @@ export const sizeunit = function(value = 0) {
 }
 
 
-export const timeunit = function(value = 0) {
+export const timeUnit = function(value = 0) {
     return {
         value: value,
         set milliseconds(n) {this.value = n},
@@ -196,11 +196,11 @@ export const openFiles = function(sources, encoding) {
                     content: readFileSync(path, {encoding}), // encoding can for example be one of ["utf8", "base64", "ascii", "binary"]
                     encoding,
                     mime: Mime.getType(path),
-                    size: sizeunit(asset.size),
+                    size: sizeUnit(asset.size),
                     directory: dirname(path),
                     name: basename(path),
-                    created: asset.birthtime, //timeunit(asset.birthtimeMs) // https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems
-                    modified: asset.mtime //timeunit(asset.mtimeMs)
+                    created: asset.birthtime, //timeUnit(asset.birthtimeMs) // https://www.unixtutorial.org/atime-ctime-mtime-in-unix-filesystems
+                    modified: asset.mtime //timeUnit(asset.mtimeMs)
                 })
             } else if(asset.isDirectory()) {
                 const paths = readdirSync(path).map(name => join(path, name))
@@ -211,7 +211,7 @@ export const openFiles = function(sources, encoding) {
                 content: null,
                 encoding: undefined,
                 mime: undefined,
-                size: sizeunit(0),
+                size: sizeUnit(0),
                 directory: dirname(path),
                 created: undefined,
                 modified: undefined,
@@ -309,8 +309,8 @@ export const executeScript = function(src) { // run shell command and throw on e
 
 
 export default {
-    sizeunit,
-    timeunit,
+    sizeUnit,
+    timeUnit,
     createDirectory,
     createFile,
     createScriptFile,
