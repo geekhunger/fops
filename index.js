@@ -105,6 +105,11 @@ export const createFile = function(path, content, action = "w", mode = 0o744, di
 }
 
 
+export const changeFilePermissions = function(path, mode = 755) {
+    return executeCommand(`chmod ${mode} '${path}'`)
+}
+
+
 export const mkscript = function(filepath, contents, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
         const status = createFile(
@@ -287,6 +292,11 @@ export const executeCommand = function(command, options) {
             // `failure` contains the entire trace stack, including the short-form error message
         }
     }
+}
+
+
+export const executeSudoCommand = function(command, password, options) {
+    return executeCommand(`echo "${password}" | sudo -S ${command}`, options)
 }
 
 
