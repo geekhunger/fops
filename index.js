@@ -110,11 +110,15 @@ export const changeFilePermissions = function(path, mode = 755) {
 }
 
 
-export const mkscript = function(filepath, contents, environment, gitignore = false) {
+export const createScript = function(filepath, contents, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
+        let shebang = contents.trimStart().slice(0, contents.trimEnd().indexOf("\n"))
+        if(!shebang.startsWith("#!")) {
+            shebang = "#!/bin/bash"
+        }
         const status = createFile(
             filepath,
-            `#!/bin/bash\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
+            `${shebang}\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
             "w", // override existing file
             0o750
         )
