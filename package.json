@@ -33,5 +33,11 @@
         "nodejs-scope": "^2.1.2",
         "string-slurp": "^2.1.0",
         "type-approve": "^4.0.0"
+    },
+    "devDependencies": {
+        "ava": "^6.1.2"
+    },
+    "scripts": {
+        "test": "ava"
     }
 }
