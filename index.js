@@ -74,7 +74,7 @@ export const timeUnit = function(value = 0) {
 }
 
 
-export const createFolder = function(path, dotnames = true, sandbox = false) { // recursive creation of directory
+export const createFolder = function(path, sandbox = false, dotnames = true) { // recursive creation of directory
     if(sandbox === true) {
         assert(path === resolve(rootpath.toString(), path), `Directory '${path}' is outside of the sandboxed project folder '${rootpath.toString()}'!`)
     }
@@ -93,8 +93,8 @@ export const createFolder = function(path, dotnames = true, sandbox = false) { /
 }
 
 
-export const createFile = function(path, content, action = "w", mode = 0o744, dir_dotnames = true, sandbox = false) { // recursive creation of file
-    createFolder(dirname(path), dir_dotnames, sandbox)
+export const createFile = function(path, content, action = "w", mode = 0o755, folder_sandbox = false, folder_dotnames = true) { // recursive creation of file
+    createFolder(dirname(path), folder_sandbox, folder_dotnames)
     try { // try-catch needed because writeFileSync does not have a return value, instead it throws an error on failure
         writeFileSync(path, content, {flag: action, mode: mode})
         return true
