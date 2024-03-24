@@ -30,6 +30,18 @@ import {assert, type} from "type-approve"
 import strim from "string-slurp"
 
 
+const isFilepath = function(value) {
+    if(!existsSync(value)) return false
+    return statSync(value).isFile()
+}
+
+
+const isFolderpath = function(value) {
+    if(!existsSync(value)) return false
+    return statSync(value).isDirectory()
+}
+
+
 export const sizeunit = function(value = 0) {
     return {
         value: value,
@@ -69,7 +81,7 @@ export const createFolder = function(path, dotnames = true, sandbox = false) { /
     if(dotnames !== true) {
         const malformed_subfolders = path?.split(PATH_SEPARATOR)?.filter(Boolean)?.every(part => extname(part).length === 0) || []
         const error_messages = malformed_subfolders.map(folder => `Folder '${basename(folder)}' must not contain a file type extension '${extname(folder)}'!`)
-        assert(type({folderpath: path}) && malformed_subfolders.length === 0, `Directory '${path}' contains malformed sub-folder names!\n${error_messages.join("\n\t")}`)
+        assert(isFolderpath(path) && malformed_subfolders.length === 0, `Directory '${path}' contains malformed sub-folder names!\n${error_messages.join("\n\t")}`)
     }
     if(/^\./i.test(path)) {
         path += "/./" // convert dot-files into folders!
@@ -168,7 +180,7 @@ export const openFiles = function(sources, encoding) {
     if(!type({array: sources})) {
         sources = [sources]
     }
-    const malformed_paths = sources.filter(path => !type({filepath: path}) && !type({folderpath: path}))
+    const malformed_paths = sources.filter(path => !isFilepath(path) && !isFolderpath(path))
     assert(malformed_paths.length === 0, `Found malformed paths ${JSON.stringify(malformed_paths)}!`)
     let files = []
     for(let path of sources) {
@@ -203,7 +215,7 @@ export const openFiles = function(sources, encoding) {
             console.warn(`Could not read file '${path}'! ${exception.message}`)
         }
     }
-    // if(files.length > 1 && (sources.length > 1 || (sources.length === 1 && type({folderpath: sources[0]})))) {
+    // if(files.length > 1 && (sources.length > 1 || (sources.length === 1 && isFolderpath(sources[0])))) {
     //     return files // return an array of files when @sources contained more than one path, or when @sources had only one path but it was a directory
     // }
     // return files[0]
@@ -212,7 +224,7 @@ export const openFiles = function(sources, encoding) {
 
 
 export const openFile = function(path, encoding) { // a convenience alias to `openFiles(path, encoding)[0]`
-    assert(type({filepath: path}), `Malformed path '${path}'!`)
+    assert(isFilepath(path), `Malformed path '${path}'!`)
     return openFiles(path, encoding)?.[0] || null
 }
 
@@ -233,7 +245,7 @@ export const openJsonFile = function(path) {
 
 export const readPlist = function(src, env = scope.env) {
     let path = null
-    if(type({filepath: src})) {
+    if(isFilepath(src)) {
         path = src
         src = openJsonFile(path)
     }
@@ -279,7 +291,7 @@ export const executeCommand = function(command, options) {
 
 
 export const executeScript = function(src) { // run shell command and throw on errors with message from stdout
-    if(type({filepath: src}) && !/^sh\s/i.test(src)) {
+    if(isFilepath(src)) {
         src = openFile(src, "utf8").content
     }
     return assert(...Object.values(executeCommand(src)))
