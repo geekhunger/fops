@@ -32,7 +32,7 @@ import strim from "string-slurp"
 
 export const sizeUnit = function(value = 0) {
     return {
-        value: value,
+        value: value,   // byte
         set byte(n)     {this.value = n},
         set kilobyte(n) {this.value = n * 1024},
         set megabyte(n) {this.value = n * 1024 * 1024},
@@ -47,7 +47,7 @@ export const sizeUnit = function(value = 0) {
 
 export const timeUnit = function(value = 0) {
     return {
-        value: value,
+        value: value,       // milliseconds
         set milliseconds(n) {this.value = n},
         set seconds(n)      {this.value = n * 1000},
         set minutes(n)      {this.value = n * 1000 * 60},
@@ -114,7 +114,7 @@ export const changeFilePermissions = function(path, mode = 755) {
 
 export const createScript = function(filepath, contents, mode = 0o750, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
-        const sourceref = `# This script has been auto-generated. Source can be found at: ${getCallerFilepath()}`
+        const sourceref = "# This script has been auto-generated. Source can be found at: " + getCallerFilepath()
         let shebang = contents.trimStart().slice(0, contents.trimEnd().indexOf("\n"))
         if(!shebang.startsWith("#!")) {
             shebang = "#!/bin/bash"
