@@ -81,7 +81,7 @@ export const createFolder = function(path, sandbox = true, dotnames = true) { //
         const dir = folders[folders.length - 1]
         assert(
             !dir.startsWith(".") && dir.match(/\w+/) !== null,
-            `Directory '${path}' must not have a dot-name!`
+            `Directory '${path}' has a disallowed dot-folder name!`
         )
     }
     if(sandbox === true) {
@@ -90,7 +90,7 @@ export const createFolder = function(path, sandbox = true, dotnames = true) { //
         const file = basename(path)
         assert(
             resolve(cwd, dir).match(/^\.+[\\\/]/) === null,
-            `Directory '${path}' is outside of the sandboxed project folder '${cwd}'!`
+            `Directory '${path}' is outside the project sandbox!`
         )
         path = join(rootpath.resolve(dir), file)
     }
