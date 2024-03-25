@@ -115,12 +115,14 @@ export const changeFilePermissions = function(path, mode = 755) {
 export const createScript = function(filepath, contents, mode = 0o750, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
         let shebang = contents.trimStart().slice(0, contents.trimEnd().indexOf("\n"))
-        if(!shebang.startsWith("#!")) {
-            shebang = "#!/bin/bash"
+        if(shebang.startsWith("#!")) {
+            shebang = "" // keep the existing one
+        } else {
+            shebang = "#!/bin/bash\n\n" // specify shell runtime
         }
         createFile(
             filepath,
-            `${shebang}\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
+            `${shebang}# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
             "w", // override existing file
             mode
         )
