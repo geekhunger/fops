@@ -3,15 +3,22 @@ import fn from "./index.js"
 
 import {join} from "path"
 import rootpath from "app-root-path"
+
 const filepath = rootpath.resolve("/node_modules/.tmp")
 
 
-test("create gitignore", t => {
-    fn.createGitignore(filepath, `
-        # This is a demo
-        # This folder does not exist
-        /whatever/folders/**
-    `)
+test.serial("crud folder", t => {
+    if(fn.hasFolder(filepath)) {
+        fn.deleteFolder(filepath)
+        t.false(fn.hasFolder(filepath), "Folder deletion failed!")
+    }
+
+    t.log("createFolder return value", fn.createFolder(filepath))
+    t.true(fn.hasFolder(filepath), "Folder creation failed!")
+
+    const path = "/tmp/foobar"
+    fn.createFolder(path, true)
+    t.false(fn.hasFolder(path), "Folder creation outside of sandbox!")
 })
 
 
@@ -22,6 +29,15 @@ test.skip("create file", t => {
 
 test.skip("read file", t => {
     fn.openFile(join(filepath, "hello.txt"))
+})
+
+
+test.skip("create gitignore", t => {
+    fn.createGitignore(filepath, `
+        # This is a demo
+        # This folder does not exist
+        /whatever/folders/**
+    `)
 })
 
 

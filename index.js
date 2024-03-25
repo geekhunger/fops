@@ -2,8 +2,8 @@ import {
     dirname,
     basename,
     extname,
-    join,
     resolve,
+    join,
     sep as PATH_SEPARATOR
 } from "path"
 
@@ -28,18 +28,6 @@ import {execSync} from "child_process"
 
 import {assert, type} from "type-approve"
 import strim from "string-slurp"
-
-
-const isFilepath = function(value) {
-    if(!existsSync(value)) return false
-    return statSync(value).isFile()
-}
-
-
-const isFolderpath = function(value) {
-    if(!existsSync(value)) return false
-    return statSync(value).isDirectory()
-}
 
 
 export const sizeUnit = function(value = 0) {
@@ -74,58 +62,71 @@ export const timeUnit = function(value = 0) {
 }
 
 
+export const hasFolder = function(value) {
+    if(!existsSync(value)) return false
+    return statSync(value).isDirectory()
+}
+
+
+export const hasFile = function(value) {
+    if(!existsSync(value)) return false
+    return statSync(value).isFile()
+}
+
+
 export const createFolder = function(path, sandbox = true, dotnames = true) { // recursive creation of directory
-    if(sandbox === true) {
-        assert(path === resolve(rootpath.toString(), path), `Directory '${path}' is outside of the sandboxed project folder '${rootpath.toString()}'!`)
-    }
     if(dotnames !== true) {
-        const malformed_subfolders = path?.split(PATH_SEPARATOR)?.filter(Boolean)?.every(part => extname(part).length === 0) || []
-        const error_messages = malformed_subfolders.map(folder => `Folder '${basename(folder)}' must not contain a file type extension '${extname(folder)}'!`)
-        assert(isFolderpath(path) && malformed_subfolders.length === 0, `Directory '${path}' contains malformed sub-folder names!\n${error_messages.join("\n\t")}`)
+        const cwd = rootpath.toString()
+        const folders = resolve(cwd, dirname(path)).split(PATH_SEPARATOR)
+        const dir = folders[folders.length - 1]
+        assert(
+            !dir.startsWith(".") && dir.match(/\w+/) !== null,
+            `Directory '${path}' must not have a dot-name!`
+        )
     }
-    if(/^\./i.test(path)) {
-        path += "/./" // convert dot-files into folders!
+    if(sandbox === true) {
+        const cwd = rootpath.toString()
+        const dir = dirname(path)
+        const file = basename(path)
+        assert(
+            resolve(cwd, dir).match(/^\.+[\\\/]/) === null,
+            `Directory '${path}' is outside of the sandboxed project folder '${cwd}'!`
+        )
+        path = join(rootpath.resolve(dir), file)
     }
     if(!existsSync(path)) {
         mkdirSync(path, {recursive: true})
     }
-    return true
 }
 
 
 export const createFile = function(path, content, action = "w", mode = 0o755, folder_sandbox = true, folder_dotnames = true) { // recursive creation of file
     createFolder(dirname(path), folder_sandbox, folder_dotnames)
-    try { // try-catch needed because writeFileSync does not have a return value, instead it throws an error on failure
-        writeFileSync(path, content, {flag: action, mode: mode})
-        return true
-    } catch(exception) {
-        console.warn(`Could not create file '${path}' because of error: ${exception.message}`)
-        return false
-    }
+    writeFileSync(path, content, {flag: action, mode: mode})
 }
 
 
 export const changeFilePermissions = function(path, mode = 755) {
-    return executeCommand(`chmod ${mode} '${path}'`)
+    const {success, stdout} = executeCommand(`chmod ${mode} '${path}'`)
+    assert(success === true, stdout)
 }
 
 
-export const createScript = function(filepath, contents, environment, gitignore = false) {
+export const createScript = function(filepath, contents, mode = 0o750, environment, gitignore = false) {
     if(type({nil: environment}) || environment === scope.env) { // create file only if it's meant for given environment
         let shebang = contents.trimStart().slice(0, contents.trimEnd().indexOf("\n"))
         if(!shebang.startsWith("#!")) {
             shebang = "#!/bin/bash"
         }
-        const status = createFile(
+        createFile(
             filepath,
             `${shebang}\n\n# This script has been auto-generated\n# Generator source can be found at '${getCallerFilepath()}'\n\n${strim(contents)}`,
             "w", // override existing file
-            0o750
+            mode
         )
         if(gitignore === true) {
-            return createGitignore(dirname(filepath), basename(filepath)) && status
+            createGitignore(dirname(filepath), basename(filepath))
         }
-        return status
     }
 }
 
@@ -158,18 +159,12 @@ export const createGitignore = function(path, rules, selfignore = false) {
         content_new += "\n.gitignore" // git untrack self
     }
 
-    return write(content_new)
+    write(content_new)
 }
 
 
 export const deleteFile = function(path) { // recursive removal of file or folder
-    try {
-        rmSync(path, {recursive: true, force: true})
-        return true
-    } catch(failure) {
-        console.warn(`Could not delete file '${path}'! ${failure.message}`)
-        return false
-    }
+    rmSync(path, {recursive: true, force: true})
 }
 
 
@@ -189,7 +184,7 @@ export const openFiles = function(sources, encoding) {
     if(!type({array: sources})) {
         sources = [sources]
     }
-    const malformed_paths = sources.filter(path => !isFilepath(path) && !isFolderpath(path))
+    const malformed_paths = sources.filter(path => !hasFile(path) && !hasFolder(path))
     assert(malformed_paths.length === 0, `Found malformed paths ${JSON.stringify(malformed_paths)}!`)
     let files = []
     for(let path of sources) {
@@ -224,7 +219,7 @@ export const openFiles = function(sources, encoding) {
             console.warn(`Could not read file '${path}'! ${exception.message}`)
         }
     }
-    // if(files.length > 1 && (sources.length > 1 || (sources.length === 1 && isFolderpath(sources[0])))) {
+    // if(files.length > 1 && (sources.length > 1 || (sources.length === 1 && hasFolder(sources[0])))) {
     //     return files // return an array of files when @sources contained more than one path, or when @sources had only one path but it was a directory
     // }
     // return files[0]
@@ -233,14 +228,14 @@ export const openFiles = function(sources, encoding) {
 
 
 export const openFile = function(path, encoding) { // a convenience alias to `openFiles(path, encoding)[0]`
-    assert(isFilepath(path), `Malformed path '${path}'!`)
+    assert(hasFile(path), `Malformed path '${path}'!`)
     return openFiles(path, encoding)?.[0] || null
 }
 
 
 export const readJson = function(src) {
     let path = null
-    if(isFilepath(src)) {
+    if(hasFile(src)) {
         path = src
         const file = openFile(path, "utf8")
         assert(type({object: file}) && file.content !== null && file.size?.value > 0, `Invalid JSON file '${path}'!`)
@@ -263,7 +258,7 @@ export const readJson = function(src) {
 
 export const readPlist = function(src, env = scope.env) {
     let path = null
-    if(isFilepath(src)) {
+    if(hasFile(src)) {
         path = src
         src = readJson(path)
     }
@@ -309,12 +304,17 @@ export const executeCommand = function(command, options) {
 
 
 export const executeSudoCommand = function(command, password, options) {
-    return executeCommand(`echo "${password}" | sudo -S ${command}`, options)
+    const {success, stdout} = executeCommand(`echo "${password}" | sudo -S ${command}`, options)
+    if(!success) {
+        console.error(`Failed executing command '${command}' with admin permissions!`, stdout)
+        return false
+    }
+    return true
 }
 
 
 export const executeScript = function(src) { // run shell command and throw on errors with message from stdout
-    if(isFilepath(src)) {
+    if(hasFile(src)) {
         src = openFile(src, "utf8").content
     }
     return assert(...Object.values(executeCommand(src)))
@@ -324,8 +324,10 @@ export const executeScript = function(src) { // run shell command and throw on e
 export default {
     sizeUnit,
     timeUnit,
+    hasFolder,
     createFolder,
     deleteFolder,
+    hasFile,
     createFile,
     openFiles,
     openFile,
