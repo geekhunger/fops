@@ -2,6 +2,7 @@ import {
     dirname,
     basename,
     extname,
+    relative,
     resolve,
     join,
     sep as PATH_SEPARATOR
@@ -14,7 +15,8 @@ import {
     mkdirSync,
     readFileSync,
     writeFileSync,
-    rmSync
+    rmSync,
+    chmodSync
 } from "fs"
 
 import callsites from "callsites"
@@ -86,28 +88,24 @@ export const hasFile = function(value) {
 }
 
 
-export const createFolder = function(path, sandbox = true, dotnames = true) { // recursive creation of directory
+export const createFolder = function(directory, sandbox = true, dotnames = true) { // recursive creation of directory
+    const sandbox_directory = absoluteSandboxPath()
     if(dotnames !== true) {
-        const cwd = rootpath.toString()
-        const folders = resolve(cwd, dirname(path)).split(PATH_SEPARATOR)
-        const dir = folders[folders.length - 1]
-        assert(
-            !dir.startsWith(".") && dir.match(/\w+/) !== null,
-            `Directory '${path}' has a disallowed dot-folder name!`
-        )
+        let path = ""
+        for(let folder of resolve(sandbox_directory, directory).split(PATH_SEPARATOR)) {
+            path += folder
+            assert(
+                (!folder.startsWith(".") && folder.match(/\w+/) !== null) || hasFolder(path),
+                `Directory '${directory}' contains subfolder '${folder}' with disallowed dot-name!`
+            )
+        }
     }
-    if(sandbox === true) {
-        const cwd = rootpath.toString()
-        const dir = dirname(path)
-        const file = basename(path)
-        assert(
-            resolve(cwd, dir).match(/^\.+[\\\/]/) === null,
-            `Directory '${path}' is outside the project sandbox!`
-        )
-        path = join(rootpath.resolve(dir), file)
-    }
-    if(!existsSync(path)) {
-        mkdirSync(path, {recursive: true})
+    assert(
+        sandbox !== true || relative(sandbox_directory, resolve(sandbox_directory, directory)).match(/^[\\\/\.~]/) === null,
+        `Directory '${directory}' is outside the project sandbox '${sandbox_directory}'!`
+    )
+    if(!existsSync(directory)) {
+        mkdirSync(directory, {recursive: true})
     }
 }
 
