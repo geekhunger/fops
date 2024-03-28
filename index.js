@@ -162,7 +162,12 @@ export const createGitignore = function(path, rules, selfignore = false) {
 }
 
 
-export const deleteFile = function(path) { // recursive removal of file or folder
+export const deleteFile = function(path, sandbox = true) { // recursive removal of file or folder
+    const sandbox_directory = absoluteSandboxPath()
+    assert(
+        sandbox !== true || relative(sandbox_directory, resolve(sandbox_directory, directory)).match(/^[\\\/\.~]/) === null,
+        `Directory '${directory}' is outside the project sandbox '${sandbox_directory}'!`
+    )
     rmSync(path, {recursive: true, force: true})
 }
 
