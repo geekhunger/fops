@@ -334,27 +334,5 @@ export const executeScript = function(src) { // run shell command and throw on e
     if(hasFile(src)) {
         src = openFile(src, "utf8").content
     }
-    return assert(...Object.values(executeCommand(src)))
-}
-
-
-export default {
-    sizeUnit,
-    timeUnit,
-    hasFolder,
-    createFolder,
-    deleteFolder,
-    hasFile,
-    createFile,
-    openFiles,
-    openFile,
-    deleteFile,
-    readJson,
-    readPlist,
-    createScript,
-    createGitignore,
-    changeFilePermissions,
-    executeCommand,
-    executeSudoCommand,
-    executeScript
+    assert(...Object.values(executeCommand(src)))
 }
