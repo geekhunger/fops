@@ -63,13 +63,13 @@ export const timeUnit = function(value = 0) {
 
 
 export const hasFolder = function(value) {
-    if(!existsSync(value)) return false
+    assert(existsSync(value), `Missing '${value}'!`)
     return statSync(value).isDirectory()
 }
 
 
 export const hasFile = function(value) {
-    if(!existsSync(value)) return false
+    assert(existsSync(value), `Missing '${value}'!`)
     return statSync(value).isFile()
 }
 
