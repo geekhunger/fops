@@ -308,6 +308,7 @@ export const readPlist = function(src, env = scope.env) {
 
 
 export const executeCommand = function(command, options) {
+    // TODO make method throw on error
     try {
         return {
             stdout: execSync(command, options).toString().trim(),
