@@ -326,12 +326,7 @@ export const executeCommand = function(command, options) {
 
 
 export const executeSudoCommand = function(command, password, options) {
-    const {success, stdout} = executeCommand(`echo "${password}" | sudo -S ${command}`, options)
-    if(!success) {
-        console.error(`Failed executing command '${command}' with admin permissions!`, stdout)
-        return false
-    }
-    return true
+    executeCommand(`echo "${password}" | sudo -S ${command}`, options)
 }
 
 
