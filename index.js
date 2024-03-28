@@ -106,10 +106,11 @@ export const createFile = function(path, content, action = "w", mode = 0o755, fo
 }
 
 
-export const changeFilePermissions = function(path, mode = 755) {
-    const {success, stdout} = executeCommand(`chmod ${mode} '${path}'`)
-    assert(success === true, stdout)
-}
+// export const changePermissions = function(path, mode = 0o755) {
+//     //const {success, stdout} = executeCommand(`chmod ${mode} '${path}'`)
+//     //assert(success === true, stdout)
+//     chmodSync(path, mode) // https://stackoverflow.com/a/20769157/4383587, https://nodejs.org/api/fs.html#file-modes
+// }
 
 
 export const createScript = function(filepath, contents, mode = 0o750, environment, gitignore = false) {
