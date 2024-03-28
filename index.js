@@ -62,6 +62,18 @@ export const timeUnit = function(value = 0) {
 }
 
 
+export const absoluteSandboxPath = function(path = null) {
+    const working_directory = rootpath.toString()
+    assert(path === undefined || path === null || type({string: path}), "Invalid type of path argument!")
+    if(!type({string: path})) {
+        return working_directory
+    }
+    const relative_path = relative(working_directory, resolve(working_directory, path))
+    const restricted_path = relative_path.replace(/^[\\\/\.~]+\//, "")
+    return rootpath.resolve(restricted_path)
+}
+
+
 export const hasFolder = function(value) {
     assert(existsSync(value), `Missing '${value}'!`)
     return statSync(value).isDirectory()
