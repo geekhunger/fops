@@ -310,15 +310,15 @@ export const readPlist = function(src, env = scope.env) {
 export const executeCommand = function(command, options) {
     try {
         return {
-            success: true,
-            stdout: execSync(command, options).toString().trim()
+            stdout: execSync(command, options).toString().trim(),
+            success: true
         }
     } catch(failure) {
         return {
-            success: false,
-            stdout: failure.toString().trim()
-            // `failure.stderr` contains the a short-form error message
             // `failure` contains the entire trace stack, including the short-form error message
+            // `failure.stderr` contains the a short-form error message
+            stdout: failure.toString().trim(),
+            success: false
         }
     }
 }
