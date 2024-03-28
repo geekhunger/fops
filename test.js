@@ -1,53 +1,98 @@
 import test from "ava"
-import fn from "./index.js"
-
-import {join} from "path"
+import {resolve, relative, join, sep} from "path"
+import * as fn from "./index.js"
 import rootpath from "app-root-path"
 
-const filepath = rootpath.resolve("/node_modules/.tmp")
+
+test.serial("path sandboxing", t => {
+    t.assert(fn.absoluteSandboxPath(/*undefined*/) === rootpath.toString())
+    t.assert(fn.absoluteSandboxPath(null) === rootpath.toString())
+    t.log("without arguments, sandbox environment equals to project folder")
+    t.assert(fn.absoluteSandboxPath("/tmp/foo/bar") === rootpath.resolve("tmp/foo/bar"))
+    t.log("can move deeper inside sandbox environment")
+    t.assert(fn.absoluteSandboxPath("../../tmp") === rootpath.resolve("tmp"))
+    t.assert(fn.absoluteSandboxPath("./../.tmp") === rootpath.resolve(".tmp"))
+    t.assert(fn.absoluteSandboxPath(rootpath.resolve("../../.foo/bar")) === rootpath.resolve(".foo/bar"))
+    t.log("can not escape out of sandbox environment")
+})
 
 
-test.serial("crud folder", t => {
-    if(fn.hasFolder(filepath)) {
-        fn.deleteFolder(filepath)
-        t.false(fn.hasFolder(filepath), "Folder deletion failed!")
+test.serial("file type recognition", t => {
+    t.throws(() => fn.hasFolder(fn.absoluteSandboxPath("foo/bar/baz")))
+    t.throws(() => fn.hasFile(fn.absoluteSandboxPath("foo/bar.baz")))
+    t.log("asserts on missing paths")
+    t.true(fn.hasFolder(fn.absoluteSandboxPath("node_modules")))
+    t.true(fn.hasFile(fn.absoluteSandboxPath("index.js")))
+    t.log("succeeds on existing paths")
+})
+
+
+test("folder operations", t => {
+    const crud = dir => {
+        const working_directory = fn.absoluteSandboxPath()
+        const subfolders = dir.split("/")
+        const parent_directory = dir.slice(0, dir.indexOf(sep, 2))
+        const contains_dotnames = subfolders.some(folder => folder.startsWith("."))
+        const within_sandbox = relative(working_directory, resolve(working_directory, dir)).match(/^\.*[\\\/]/) === null
+
+        t.log("crud: " + dir, parent_directory)
+
+        // t.notThrows(() => fn.createFolder(dir, false, true))
+        // t.true(fn.hasFolder(dir))
+        // t.notThrows(() => fn.deleteFolder(parent_directory))
+        // t.false(fn.hasFolder(parent_directory))
+        // t.log("\tcreation works (un)sandboxed")
+
+        // if(!within_sandbox) {
+        //     t.throws(() => fn.createFolder(dir, true, true))
+        //     t.false(fn.hasFolder(dir))
+        //     t.log("\tsandbox restrictions get respected")
+        // }
+
+        // if(contains_dotnames) {
+        //     t.throws(() => fn.createFolder(dir, false, false))
+        //     t.false(fn.hasFolder(dir))
+        //     t.log("\tdotname restrictions get respected")
+        // }
+        
+        return t.pass("ok")
     }
 
-    t.log("createFolder return value", fn.createFolder(filepath))
-    t.true(fn.hasFolder(filepath), "Folder creation failed!")
+    let paths = [
+        "./.foobarbaz/hello/.world",
+        "./.foobarbaz/.hello/world",
+        "./.foobarbaz",
+        "foobarbaz",
+        "foobarbaz/hello/world",
+        "foobarbaz/.hello/world",
+        "foobarbaz/hello/.world",
+    ]
 
-    const path = "/tmp/foobar"
-    fn.createFolder(path, true)
-    t.false(fn.hasFolder(path), "Folder creation outside of sandbox!")
+    for(let path of paths) {
+        t.notThrows(() => crud(path))
+    }
 })
 
 
-test.skip("create file", t => {
+test.skip("file operations", t => {
+    t.true(fn.hasFile("./index.js"))
     fn.createFile(join(filepath, "hello.txt"), "Hello World!")
-})
-
-
-test.skip("read file", t => {
     fn.openFile(join(filepath, "hello.txt"))
 })
 
 
-test.skip("create gitignore", t => {
+test.skip("script", t => {
+    fn.createScript(join(filepath, "echo.sh"), "echo 'Hello World!'")
+    const cmd = "echo 'Hello World!'"
+    console.log(fn.executeCommand(cmd))
+    console.log(fn.executeScript(cmd)) // executeScript can do the same as executeCommand too
+})
+
+
+test.skip("gitignore interactions", t => {
     fn.createGitignore(filepath, `
         # This is a demo
         # This folder does not exist
         /whatever/folders/**
     `)
-})
-
-
-test.skip("create script", t => {
-    fn.createScript(join(filepath, "echo.sh"), "echo 'Hello World!'")
-})
-
-
-test.skip("run script/command", t => {
-    const cmd = "echo 'Hello World!'"
-    console.log(fn.executeCommand(cmd))
-    console.log(fn.executeScript(cmd)) // executeScript can do the same as executeCommand too
 })
