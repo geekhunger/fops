@@ -100,8 +100,13 @@ export const createFolder = function(path, sandbox = true, dotnames = true) { //
 }
 
 
-export const createFile = function(path, content, action = "w", mode = 0o755, folder_sandbox = true, folder_dotnames = true) { // recursive creation of file
-    createFolder(dirname(path), folder_sandbox, folder_dotnames)
+export const createFile = function(path, content, action = "w", mode = 0o755, sandbox = true, dotnames = true) { // recursive creation of file
+    createFolder(dirname(path), sandbox, dotnames)
+    const file = basename(path)
+    assert(
+        dotnames === true || (!file.startsWith(".") && file.match(/\w+/) !== null),
+        `Filepath '${path}' contains filename '${file}' with disallowed dot-name!`
+    )
     writeFileSync(path, content, {flag: action, mode: mode})
 }
 
